@@ -1,10 +1,5 @@
 package org.example.services;
 
-import org.bson.Document;
-import org.bson.types.ObjectId;
-import org.example.daos.*;
-import org.example.models.CommentDTO;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -14,171 +9,179 @@ import java.util.List;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.bson.Document;
+import org.bson.types.ObjectId;
+import org.example.daos.ConfigDAO;
+import org.example.daos.ProjectDao;
+import org.example.models.CommentDTO;
 
 public class ProjectService {
-    private ProjectDao projectDao;
-    private HunkService hunkService;
-    private ConfigDAO configDAO;
-    private CommentService commentService;
-//    private final String ADDED_LINES_REGEX = "^\\+(?>.+(?>\\n\\+)*)+";
-    private final String ADDED_LINES_REGEX = "^(?:\\+.+\\n?)+$";
 
-    public ProjectService(ProjectDao projectDao, HunkService hunkService, ConfigDAO configDAO, CommentService commentService) {
-        this.projectDao = projectDao;
-        this.hunkService = hunkService;
-        this.configDAO = configDAO;
+  private final ProjectDao projectDao;
+  private final HunkService hunkService;
+  private final ConfigDAO configDAO;
+  private final CommentService commentService;
 
-        this.commentService = commentService;
+  public ProjectService(
+      ProjectDao projectDao,
+      HunkService hunkService,
+      ConfigDAO configDAO,
+      CommentService commentService) {
+    this.projectDao = projectDao;
+    this.hunkService = hunkService;
+    this.configDAO = configDAO;
 
+    this.commentService = commentService;
+  }
+
+  public void addCommentsByProject(int limit, boolean outputOriginalHunks) {
+    float secondInHour = 3600;
+    if (outputOriginalHunks) {
+
+      System.out.println("Retrieving and outputting initial hunks");
+      Instant startQueryCount = Instant.now();
+
+      projectDao.outputProjectsWithHunks();
+
+      Instant endQueryCount = Instant.now();
+      System.out.printf(
+          "Hours passed since retrieving and outputting initial hunks: %.2f%n",
+          Duration.between(startQueryCount, endQueryCount).toSeconds() / secondInHour);
     }
 
-    public void addCommentsByProject(int limit, boolean outputOriginalHunks) {
-        float secondInHour = 3600;
-        if (outputOriginalHunks) {
+    System.out.println("Getting total hunks to be processed count..");
+    long totalHunksCount = hunkService.getHunksCount();
+    System.out.printf("%d hunks to be processed!%n", totalHunksCount);
 
-            System.out.println("Retrieving and outputting initial hunks");
-            Instant startQueryCount = Instant.now();
+    Instant startHunkCount = Instant.now();
+    System.out.println("Hunk processing started!");
 
-            projectDao.outputProjectsWithHunks();
+    ObjectId lastSeenObjectId;
+    int amountHunksProcessed = 0;
 
-            Instant endQueryCount = Instant.now();
-            System.out.printf("Hours passed since retrieving and outputting initial hunks: %.2f%n",
-                    Duration.between(startQueryCount, endQueryCount).toSeconds()/secondInHour);
+    List<Document> hunks = hunkService.getHunks(limit);
+    while (!hunks.isEmpty()) {
+      List<CommentDTO> commentDTOS = new ArrayList<>();
+
+      for (Document document : hunks) {
+
+        List<String> addedLinesGroups =
+            extractAddedLinesFromContent(document.get("hunk", Document.class).getString("content"));
+        String projectName = document.getString("name");
+
+        LocalDateTime committerDate =
+            document
+                .get("commit", Document.class)
+                .getDate("committer_date")
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        ObjectId originalHunkId = document.get("hunk", Document.class).getObjectId("_id");
+
+        for (String lineGroup : addedLinesGroups) {
+          List<CommentDTO> comments = commentService.extractComments(lineGroup);
+
+          if (!comments.isEmpty()) {
+            comments =
+                commentService.mapToCommentDTO(
+                    projectName, comments, committerDate, originalHunkId);
+            commentDTOS.addAll(comments);
+          }
         }
+      }
 
-        System.out.println("Getting total hunks to be processed count..");
-        long totalHunksCount = hunkService.getHunksCount();
-        System.out.printf("%d hunks to be processed!%n", totalHunksCount);
+      commentService.addComments(commentDTOS);
 
-        Instant startHunkCount = Instant.now();
-        System.out.println("Hunk processing started!");
+      lastSeenObjectId = hunks.get(hunks.size() - 1).getObjectId("_id");
+      configDAO.addLastId(lastSeenObjectId);
 
-        ObjectId lastSeenObjectId;
-        int amountHunksProcessed = 0;
+      amountHunksProcessed += hunks.size();
+      System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
+      Instant endHunkCount = Instant.now();
 
-        List<Document> hunks = hunkService.getHunks(limit);
-        while (!hunks.isEmpty()) {
-            List<CommentDTO> commentDTOS = new ArrayList<>();
+      System.out.printf(
+          "Hours passed since start of processing hunks: %.2f%n",
+          Duration.between(startHunkCount, endHunkCount).toSeconds() / secondInHour);
 
-            for (Document document: hunks) {
+      hunks = hunkService.getHunks(lastSeenObjectId, limit);
+    }
 
-                List<String> addedLinesGroups = extractAddedLinesFromContent(
-                        document
-                                .get("hunk", Document.class)
-                                .getString("content"));
-                String projectName = document.getString("name");
+    commentService.getAndAddDeduplicatedComments();
+  }
 
-                LocalDateTime committerDate = document
-                        .get("commit", Document.class)
-                        .getDate("committer_date")
-                        .toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-                ObjectId originalHunkId = document
-                        .get("hunk", Document.class)
-                        .getObjectId("_id");
+  public void addCommentsByProject(ObjectId lastSeenId, int limit) {
 
-                for (String lineGroup: addedLinesGroups) {
-                    List<CommentDTO> comments = commentService.extractComments(lineGroup);
+    float secondInHour = 3600;
+    System.out.println("Getting total hunks to be processed count..");
+    long totalHunksCount = hunkService.getHunksCount(lastSeenId);
+    System.out.printf("%d hunks to be processed!", totalHunksCount);
 
-                    if (!comments.isEmpty()) {
-                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate, originalHunkId);
-                        commentDTOS.addAll(comments);
-                    }
-                }
-            }
+    Instant startHunkCount = Instant.now();
+    System.out.println("Hunk processing started!");
 
-            commentService.addComments(commentDTOS);
+    int amountHunksProcessed = 0;
+    List<Document> hunks = hunkService.getHunks(lastSeenId, limit);
 
-            lastSeenObjectId = hunks.get(hunks.size() - 1).getObjectId("_id");
-            configDAO.addLastId(lastSeenObjectId);
+    while (!hunks.isEmpty()) {
+      List<CommentDTO> commentDTOS = new ArrayList<>();
 
-            amountHunksProcessed += hunks.size();
-            System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
-            Instant endHunkCount = Instant.now();
+      for (Document document : hunks) {
 
-            System.out.printf("Hours passed since start of processing hunks: %.2f%n",
-                    Duration.between(startHunkCount, endHunkCount).toSeconds()/secondInHour);
+        List<String> addedLinesGroups =
+            extractAddedLinesFromContent(document.get("hunk", Document.class).getString("content"));
+        String projectName = document.getString("name");
 
-            hunks = hunkService.getHunks(lastSeenObjectId, limit);
+        LocalDateTime committerDate =
+            document
+                .get("commit", Document.class)
+                .getDate("committer_date")
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        ObjectId originalHunkId = document.get("hunk", Document.class).getObjectId("_id");
+
+        for (String lineGroup : addedLinesGroups) {
+          List<CommentDTO> comments = commentService.extractComments(lineGroup);
+
+          if (!comments.isEmpty()) {
+            comments =
+                commentService.mapToCommentDTO(
+                    projectName, comments, committerDate, originalHunkId);
+            commentDTOS.addAll(comments);
+          }
         }
+      }
 
-        commentService.getAndAddDeduplicatedComments();
+      commentService.addComments(commentDTOS);
+
+      lastSeenId = hunks.get(hunks.size() - 1).getObjectId("_id");
+      configDAO.addLastId(lastSeenId);
+
+      amountHunksProcessed += hunks.size();
+      System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
+      Instant endHunkCount = Instant.now();
+
+      System.out.printf(
+          "Hours passed since start of processing hunks: %.2f%n",
+          Duration.between(startHunkCount, endHunkCount).toSeconds() / secondInHour);
+
+      hunks = hunkService.getHunks(lastSeenId, limit);
     }
 
-    public void addCommentsByProject(ObjectId lastSeenId, int limit) {
+    commentService.getAndAddDeduplicatedComments();
+  }
 
-        float secondInHour = 3600;
-        System.out.println("Getting total hunks to be processed count..");
-        long totalHunksCount = hunkService.getHunksCount(lastSeenId);
-        System.out.printf("%d hunks to be processed!", totalHunksCount);
-
-        Instant startHunkCount = Instant.now();
-        System.out.println("Hunk processing started!");
-
-        int amountHunksProcessed = 0;
-        List<Document> hunks = hunkService.getHunks(lastSeenId, limit);
-
-        while (!hunks.isEmpty()) {
-            List<CommentDTO> commentDTOS = new ArrayList<>();
-
-            for (Document document: hunks) {
-
-                List<String> addedLinesGroups = extractAddedLinesFromContent(
-                        document
-                                .get("hunk", Document.class)
-                                .getString("content"));
-                String projectName = document.getString("name");
-
-                LocalDateTime committerDate = document
-                        .get("commit", Document.class)
-                        .getDate("committer_date")
-                        .toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-
-                ObjectId originalHunkId = document
-                        .get("hunk", Document.class)
-                        .getObjectId("_id");
-
-                for (String lineGroup: addedLinesGroups) {
-                    List<CommentDTO> comments = commentService.extractComments(lineGroup);
-
-                    if (!comments.isEmpty()) {
-                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate, originalHunkId);
-                        commentDTOS.addAll(comments);
-                    }
-                }
-            }
-
-            commentService.addComments(commentDTOS);
-
-            lastSeenId = hunks.get(hunks.size() - 1).getObjectId("_id");
-            configDAO.addLastId(lastSeenId);
-
-            amountHunksProcessed += hunks.size();
-            System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
-            Instant endHunkCount = Instant.now();
-
-            System.out.printf("Hours passed since start of processing hunks: %.2f%n",
-                    Duration.between(startHunkCount, endHunkCount).toSeconds()/secondInHour);
-
-            hunks = hunkService.getHunks(lastSeenId, limit);
-        }
-
-        commentService.getAndAddDeduplicatedComments();
-    }
-
-    private List<String> extractAddedLinesFromContent(String content) {
-        return Pattern
-                .compile(ADDED_LINES_REGEX, Pattern.MULTILINE)
-                .matcher(content)
-                .results()
-                .map(MatchResult::group)
-                .collect(Collectors.toList())
-                .stream()
-                .map((str) -> str.replace("+", ""))
-                .collect(Collectors.toList());
-
-    }
+  private List<String> extractAddedLinesFromContent(String content) {
+    //    private final String ADDED_LINES_REGEX = "^\\+(?>.+(?>\\n\\+)*)+";
+    String ADDED_LINES_REGEX = "^(?:\\+.+\\n?)+$";
+    return Pattern.compile(ADDED_LINES_REGEX, Pattern.MULTILINE)
+        .matcher(content)
+        .results()
+        .map(MatchResult::group)
+        .collect(Collectors.toList())
+        .stream()
+        .map((str) -> str.replace("+", ""))
+        .collect(Collectors.toList());
+  }
 }

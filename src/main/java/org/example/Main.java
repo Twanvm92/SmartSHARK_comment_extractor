@@ -12,44 +12,45 @@ import org.example.services.CommentService;
 import org.example.services.HunkService;
 import org.example.services.ProjectService;
 
-
 public class Main {
-    public static void main(String[] args) throws ConfigurationException {
+  public static void main(String[] args) throws ConfigurationException {
 
-        PropertiesConfiguration config = new PropertiesConfiguration("application.properties");
+    PropertiesConfiguration config = new PropertiesConfiguration("application.properties");
 
-        MongoDBConfiguration mongoConfig = new MongoDBConfiguration(config);
+    MongoDBConfiguration mongoConfig = new MongoDBConfiguration(config);
 
-        MongoClient mongoClient = mongoConfig.getMongoClient();
+    MongoClient mongoClient = mongoConfig.getMongoClient();
 
-        ProjectDao projectDao = new ProjectDao(
-                config.getString("mongodb.database"),
-                config.getString("mongodb.database.comments"),
-                mongoClient);
-        CommentDao commentDao = new CommentDao(
-                config.getString("mongodb.database"),
-                config.getString("mongodb.database.comments"),
-                mongoClient);
-        HunkDAO hunkDAO = new HunkDAO(
-                config.getString("mongodb.database"),
-                config.getString("mongodb.database.comments"),
-                mongoClient);
-        ConfigDAO configDAO = new ConfigDAO(
-                config.getString("mongodb.database"),
-                config.getString("mongodb.database.comments"),
-                mongoClient
-        );
+    ProjectDao projectDao =
+        new ProjectDao(
+            config.getString("mongodb.database"),
+            config.getString("mongodb.database.comments"),
+            mongoClient);
+    CommentDao commentDao =
+        new CommentDao(
+            config.getString("mongodb.database"),
+            config.getString("mongodb.database.comments"),
+            mongoClient);
+    HunkDAO hunkDAO =
+        new HunkDAO(
+            config.getString("mongodb.database"),
+            config.getString("mongodb.database.comments"),
+            mongoClient);
+    ConfigDAO configDAO =
+        new ConfigDAO(
+            config.getString("mongodb.database"),
+            config.getString("mongodb.database.comments"),
+            mongoClient);
 
-        HunkService hunkService = new HunkService(hunkDAO);
-        CommentService commentService = new CommentService(commentDao);
-        ProjectService projectService = new ProjectService(projectDao, hunkService, configDAO, commentService);
+    HunkService hunkService = new HunkService(hunkDAO);
+    CommentService commentService = new CommentService(commentDao);
+    ProjectService projectService =
+        new ProjectService(projectDao, hunkService, configDAO, commentService);
 
-        ObjectId lastSeenId = new ObjectId("63095e9d2c57ac341b55dc61");
-//        TODO need pass limit as one command line argument
-//        TODO also need to pass getInitialHunks for first hunk retrieval and saving
-//        TODO commandline argument outputOriginalHunks and objectId both optional
-        projectService.addCommentsByProject(100_000, true);
-
-    }
-
+    ObjectId lastSeenId = new ObjectId("63095e9d2c57ac341b55dc61");
+    //        TODO need pass limit as one command line argument
+    //        TODO also need to pass getInitialHunks for first hunk retrieval and saving
+    //        TODO commandline argument outputOriginalHunks and objectId both optional
+    projectService.addCommentsByProject(100_000, true);
+  }
 }
