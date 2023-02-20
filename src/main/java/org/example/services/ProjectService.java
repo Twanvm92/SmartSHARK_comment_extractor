@@ -20,7 +20,8 @@ public class ProjectService {
     private HunkService hunkService;
     private ConfigDAO configDAO;
     private CommentService commentService;
-    private final String ADDED_LINES_REGEX = "\\+.+";
+//    private final String ADDED_LINES_REGEX = "^\\+(?>.+(?>\\n\\+)*)+";
+    private final String ADDED_LINES_REGEX = "^(?:\\+.+\\n?)+$";
 
     public ProjectService(ProjectDao projectDao, HunkService hunkService, ConfigDAO configDAO, CommentService commentService) {
         this.projectDao = projectDao;
@@ -31,23 +32,23 @@ public class ProjectService {
 
     }
 
-    public void addCommentsByProject(int limit) {
-//        TODO do parameter overloading => one with limit and lastseenID where we do not get retrieve
-//         and output initial hunks and one with just limit where we do retrieve and output initial hunks
-//          and start processing hunks from start
-
-        System.out.println("Retrieving and outputting initial hunks");
-        Instant startQueryCount = Instant.now();
-
-        projectDao.outputProjectsWithHunks();
-
+    public void addCommentsByProject(int limit, boolean outputOriginalHunks) {
         float secondInHour = 3600;
-        Instant endQueryCount = Instant.now();
-        System.out.printf("Hours passed since retrieving and outputting initial hunks: %.2f%n",
-                Duration.between(startQueryCount, endQueryCount).toSeconds()/secondInHour);
+        if (outputOriginalHunks) {
 
+            System.out.println("Retrieving and outputting initial hunks");
+            Instant startQueryCount = Instant.now();
+
+            projectDao.outputProjectsWithHunks();
+
+            Instant endQueryCount = Instant.now();
+            System.out.printf("Hours passed since retrieving and outputting initial hunks: %.2f%n",
+                    Duration.between(startQueryCount, endQueryCount).toSeconds()/secondInHour);
+        }
+
+        System.out.println("Getting total hunks to be processed count..");
         long totalHunksCount = hunkService.getHunksCount();
-        System.out.printf("%d hunks to be processed!", totalHunksCount);
+        System.out.printf("%d hunks to be processed!%n", totalHunksCount);
 
         Instant startHunkCount = Instant.now();
         System.out.println("Hunk processing started!");
@@ -73,12 +74,15 @@ public class ProjectService {
                         .toInstant()
                         .atZone(ZoneId.systemDefault())
                         .toLocalDateTime();
+                ObjectId originalHunkId = document
+                        .get("hunk", Document.class)
+                        .getObjectId("_id");
 
                 for (String lineGroup: addedLinesGroups) {
                     List<CommentDTO> comments = commentService.extractComments(lineGroup);
 
                     if (!comments.isEmpty()) {
-                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate);
+                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate, originalHunkId);
                         commentDTOS.addAll(comments);
                     }
                 }
@@ -87,8 +91,7 @@ public class ProjectService {
             commentService.addComments(commentDTOS);
 
             lastSeenObjectId = hunks.get(hunks.size() - 1).getObjectId("_id");
-//            TODO persist last seen objectId
-//            configDAO.addLastSkipAmount(skip);
+            configDAO.addLastId(lastSeenObjectId);
 
             amountHunksProcessed += hunks.size();
             System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
@@ -100,25 +103,18 @@ public class ProjectService {
             hunks = hunkService.getHunks(lastSeenObjectId, limit);
         }
 
-//        TODO uncomment!
-//         only uncomment this when all comments are already in comment collection.
-//        commentService.getAndAddDeduplicatedComments();
+        commentService.getAndAddDeduplicatedComments();
     }
 
     public void addCommentsByProject(ObjectId lastSeenId, int limit) {
 
-//        Integer queryCount = projectDao.getProjectWithHunksCountAndAddHunks()
-//                .orElse(new Document("count", 0))
-//                .getInteger("count");
-
         float secondInHour = 3600;
+        System.out.println("Getting total hunks to be processed count..");
         long totalHunksCount = hunkService.getHunksCount(lastSeenId);
         System.out.printf("%d hunks to be processed!", totalHunksCount);
 
         Instant startHunkCount = Instant.now();
         System.out.println("Hunk processing started!");
-//        List<Document> projectsWithHunks = projectDao.getProjectWithHunks(skip, limit);
-
 
         int amountHunksProcessed = 0;
         List<Document> hunks = hunkService.getHunks(lastSeenId, limit);
@@ -141,26 +137,24 @@ public class ProjectService {
                         .atZone(ZoneId.systemDefault())
                         .toLocalDateTime();
 
+                ObjectId originalHunkId = document
+                        .get("hunk", Document.class)
+                        .getObjectId("_id");
+
                 for (String lineGroup: addedLinesGroups) {
                     List<CommentDTO> comments = commentService.extractComments(lineGroup);
 
                     if (!comments.isEmpty()) {
-                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate);
+                        comments = commentService.mapToCommentDTO(projectName, comments, committerDate, originalHunkId);
                         commentDTOS.addAll(comments);
                     }
                 }
             }
 
-//            TODO separate project documents not needed just query comments collection for statistics?
-//            BulkWriteResult bulkWriteResultProj = projectDao.addProjects(projectsWithHunks);
-//            TODO do not add hunks anymore to intermed database?
-//            BulkWriteResult bulkWriteResultHunk = hunkDAO.addHunks(projectsWithHunks);
-
             commentService.addComments(commentDTOS);
 
             lastSeenId = hunks.get(hunks.size() - 1).getObjectId("_id");
-//            TODO persist last seen objectId
-//            configDAO.addLastSkipAmount(skip);
+            configDAO.addLastId(lastSeenId);
 
             amountHunksProcessed += hunks.size();
             System.out.printf("%d/%d hunks processed %n", amountHunksProcessed, totalHunksCount);
@@ -172,8 +166,7 @@ public class ProjectService {
             hunks = hunkService.getHunks(lastSeenId, limit);
         }
 
-//        TODO need to uncomment!
-//        commentService.getAndAddDeduplicatedComments();
+        commentService.getAndAddDeduplicatedComments();
     }
 
     private List<String> extractAddedLinesFromContent(String content) {
@@ -182,6 +175,9 @@ public class ProjectService {
                 .matcher(content)
                 .results()
                 .map(MatchResult::group)
+                .collect(Collectors.toList())
+                .stream()
+                .map((str) -> str.replace("+", ""))
                 .collect(Collectors.toList());
 
     }

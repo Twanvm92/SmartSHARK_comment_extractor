@@ -3,6 +3,7 @@ package org.example;
 import com.mongodb.client.MongoClient;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.bson.types.ObjectId;
 import org.example.daos.CommentDao;
 import org.example.daos.ConfigDAO;
 import org.example.daos.HunkDAO;
@@ -43,9 +44,11 @@ public class Main {
         CommentService commentService = new CommentService(commentDao);
         ProjectService projectService = new ProjectService(projectDao, hunkService, configDAO, commentService);
 
+        ObjectId lastSeenId = new ObjectId("63095e9d2c57ac341b55dc61");
 //        TODO need pass limit as one command line argument
 //        TODO also need to pass getInitialHunks for first hunk retrieval and saving
-        projectService.addCommentsByProject(1_000_000);
+//        TODO commandline argument outputOriginalHunks and objectId both optional
+        projectService.addCommentsByProject(100_000, true);
 
     }
 

@@ -18,6 +18,8 @@ public class CommentDTO {
     @EqualsAndHashCode.Exclude
     @BsonProperty(value = "project_name")
     private String projectName;
+    @BsonProperty(value = "hunk_id")
+    private ObjectId hunkId;
     @NonNull
     private String content;
     @EqualsAndHashCode.Exclude
