@@ -43,6 +43,7 @@ public class CommentService {
       ObjectId branchId,
       String branchName,
       ObjectId commitId,
+      String commitHash,
       ObjectId fileActionId,
       ObjectId fileId,
       String filePath) {
@@ -59,6 +60,7 @@ public class CommentService {
               commentDTO.setBranchId(branchId);
               commentDTO.setBranchName(branchName);
               commentDTO.setCommitId(commitId);
+              commentDTO.setCommitHash(commitHash);
               commentDTO.setFileActionId(fileActionId);
               commentDTO.setFileId(fileId);
               commentDTO.setFilePath(filePath);

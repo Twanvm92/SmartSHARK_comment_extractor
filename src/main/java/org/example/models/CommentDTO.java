@@ -54,6 +54,10 @@ public class CommentDTO {
   @EqualsAndHashCode.Exclude
   private ObjectId commitId;
 
+  @BsonProperty(value = "commit_hash")
+  @EqualsAndHashCode.Exclude
+  private String commitHash;
+
   @BsonProperty(value = "file_action_id")
   @EqualsAndHashCode.Exclude
   private ObjectId fileActionId;

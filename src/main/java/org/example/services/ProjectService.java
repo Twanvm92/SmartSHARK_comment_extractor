@@ -86,6 +86,7 @@ public class ProjectService {
         String branchName = document.get("branch", Document.class).getString("name");
 
         ObjectId commitId = document.get("commit", Document.class).getObjectId("_id");
+        String commitHash = document.get("commit", Document.class).getString("revision_hash");
 
         ObjectId fileActionId = document.get("file_action", Document.class).getObjectId("_id");
 
@@ -109,6 +110,7 @@ public class ProjectService {
                     branchId,
                     branchName,
                     commitId,
+                    commitHash,
                     fileActionId,
                     fileId,
                     filePath);
@@ -176,6 +178,7 @@ public class ProjectService {
         String branchName = document.get("branch", Document.class).getString("name");
 
         ObjectId commitId = document.get("commit", Document.class).getObjectId("_id");
+        String commitHash = document.get("commit", Document.class).getString("revision_hash");
 
         ObjectId fileActionId = document.get("file_action", Document.class).getObjectId("_id");
 
@@ -199,6 +202,7 @@ public class ProjectService {
                     branchId,
                     branchName,
                     commitId,
+                    commitHash,
                     fileActionId,
                     fileId,
                     filePath);

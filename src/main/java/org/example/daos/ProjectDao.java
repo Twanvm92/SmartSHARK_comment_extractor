@@ -28,15 +28,20 @@ public class ProjectDao extends AbstractDao {
           Arrays.asList(
               new Document()
                   .append(
+                      // new stage
+                      // join project with vcs_system
                       "$lookup",
                       new Document()
                           .append("from", "vcs_system")
                           .append("localField", "_id")
                           .append("foreignField", "project_id")
                           .append("as", "vcs_system")),
+              // new stage
               new Document().append("$unwind", new Document().append("path", "$vcs_system")),
               new Document()
                   .append(
+                      // new stage
+                      // join vcs_system with branch
                       "$lookup",
                       new Document()
                           .append("from", "branch")
@@ -67,7 +72,10 @@ public class ProjectDao extends AbstractDao {
                                                                           "$is_origin_head",
                                                                           true))))))))
                           .append("as", "branch")),
+              // new stage
               new Document().append("$unwind", new Document().append("path", "$branch")),
+              // new stage
+              // join commit with branch and vcs_system
               new Document()
                   .append(
                       "$lookup",
@@ -129,6 +137,8 @@ public class ProjectDao extends AbstractDao {
                                                                           "$$vcs_id"))))))))
                           .append("as", "commit")),
               new Document().append("$unwind", new Document().append("path", "$commit")),
+              // new stage
+              // join commit with file_action
               new Document()
                   .append(
                       "$lookup",
@@ -160,7 +170,10 @@ public class ProjectDao extends AbstractDao {
                                                                           "$commit_id",
                                                                           "$$commit_id_let"))))))))
                           .append("as", "file_action")),
+              // new stage
               new Document().append("$unwind", new Document().append("path", "$file_action")),
+              // new stage
+              // join file_action with hunk
               new Document()
                   .append(
                       "$lookup",
@@ -185,7 +198,10 @@ public class ProjectDao extends AbstractDao {
                                                               "$file_action_id",
                                                               "$$file_action_id_let"))))))
                           .append("as", "hunk")),
+              // new stage
               new Document().append("$unwind", new Document().append("path", "$hunk")),
+              // new stage
+              // join file_action with file
               new Document()
                   .append(
                       "$lookup",
@@ -210,6 +226,7 @@ public class ProjectDao extends AbstractDao {
                                                               "$_id", "$$file_action_file_id"))))))
                           .append("as", "file")),
               new Document().append("$unwind", new Document().append("path", "$file")),
+              // new stage
               new Document()
                   .append(
                       "$project",
@@ -222,6 +239,7 @@ public class ProjectDao extends AbstractDao {
                           .append("branch.name", 1.0)
                           .append("commit.committer_date", 1.0)
                           .append("commit._id", 1.0)
+                          .append("commit.revision_hash", 1.0)
                           .append("file_action._id", 1.0)
                           .append("file._id", 1.0)
                           .append("file.path", 1.0)
@@ -229,6 +247,7 @@ public class ProjectDao extends AbstractDao {
                           .append("hunk._id", 1.0)
                           .append("hunk.old_start", 1.0)
                           .append("hunk.new_start", 1.0)),
+              // new stage
               new Document()
                   .append(
                       "$out",

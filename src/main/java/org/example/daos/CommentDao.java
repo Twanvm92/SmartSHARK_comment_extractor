@@ -46,12 +46,14 @@ public class CommentDao extends AbstractDao {
   }
 
   public void getAndAddDeduplicatedComments() {
-
+    // aggregation pipeline
     List<? extends Bson> pipeline =
         Arrays.asList(
+            // new stage
             new Document().append("$match", new Document().append("filtered", false)),
             new Document()
                 .append(
+                    // new stage
                     "$group",
                     new Document()
                         .append(
@@ -61,6 +63,16 @@ public class CommentDao extends AbstractDao {
                                 .append("content", "$content"))
                         .append("count", new Document().append("$sum", 1.0))
                         .append("comments", new Document().append("$push", "$$ROOT"))),
+            new Document()
+                .append(
+                    // new stage
+                    "$project",
+                    new Document()
+                        .append("_id", 0.0)
+                        .append("group_key", "$_id")
+                        .append("comments", 1.0)
+                        .append("count", 1.0)),
+            // new stage
             new Document().append("$out", DEDUPLICATED_COMMENTS_COLLECTION));
     commentsCollectionsWithoutPojo.aggregate(pipeline).allowDiskUse(true).toCollection();
   }
