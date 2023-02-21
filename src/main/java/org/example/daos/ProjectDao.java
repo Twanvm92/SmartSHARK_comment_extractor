@@ -114,8 +114,13 @@ public class ProjectDao extends AbstractDao {
                                                                           "$committer_date",
                                                                           new SimpleDateFormat(
                                                                                   "yyyy-MM-dd HH:mm:ss.SSSZ")
+                                                                              //
+                                                                              //
+                                                                              //
+                                                                              //
+                                                                              // TODO change date!
                                                                               .parse(
-                                                                                  "2016-01-01 01:00:00.000+0100"))),
+                                                                                  "2020-01-01 01:00:00.000+0100"))),
                                                               new Document()
                                                                   .append(
                                                                       "$eq",
@@ -218,7 +223,6 @@ public class ProjectDao extends AbstractDao {
                           .append("commit.committer_date", 1.0)
                           .append("commit._id", 1.0)
                           .append("file_action._id", 1.0)
-                          .append("file_action.file_id", 1.0)
                           .append("file._id", 1.0)
                           .append("file.path", 1.0)
                           .append("hunk.content", 1.0)

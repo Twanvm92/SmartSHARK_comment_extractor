@@ -77,6 +77,20 @@ public class ProjectService {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         ObjectId originalHunkId = document.get("hunk", Document.class).getObjectId("_id");
+        int hunkNewStart = document.get("hunk", Document.class).getInteger("new_start");
+        int hunkOldStart = document.get("hunk", Document.class).getInteger("old_start");
+
+        ObjectId vcsId = document.get("vcs_system", Document.class).getObjectId("_id");
+        String vcsUrl = document.get("vcs_system", Document.class).getString("url");
+        ObjectId branchId = document.get("branch", Document.class).getObjectId("_id");
+        String branchName = document.get("branch", Document.class).getString("name");
+
+        ObjectId commitId = document.get("commit", Document.class).getObjectId("_id");
+
+        ObjectId fileActionId = document.get("file_action", Document.class).getObjectId("_id");
+
+        ObjectId fileId = document.get("file", Document.class).getObjectId("_id");
+        String filePath = document.get("file", Document.class).getString("path");
 
         for (String lineGroup : addedLinesGroups) {
           List<CommentDTO> comments = commentService.extractComments(lineGroup);
@@ -84,7 +98,20 @@ public class ProjectService {
           if (!comments.isEmpty()) {
             comments =
                 commentService.mapToCommentDTO(
-                    projectName, comments, committerDate, originalHunkId);
+                    projectName,
+                    comments,
+                    committerDate,
+                    originalHunkId,
+                    hunkNewStart,
+                    hunkOldStart,
+                    vcsId,
+                    vcsUrl,
+                    branchId,
+                    branchName,
+                    commitId,
+                    fileActionId,
+                    fileId,
+                    filePath);
             commentDTOS.addAll(comments);
           }
         }
@@ -140,6 +167,20 @@ public class ProjectService {
                 .toLocalDateTime();
 
         ObjectId originalHunkId = document.get("hunk", Document.class).getObjectId("_id");
+        int hunkNewStart = document.get("hunk", Document.class).getInteger("new_start");
+        int hunkOldStart = document.get("hunk", Document.class).getInteger("old_start");
+
+        ObjectId vcsId = document.get("vcs_system", Document.class).getObjectId("_id");
+        String vcsUrl = document.get("vcs_system", Document.class).getString("url");
+        ObjectId branchId = document.get("branch", Document.class).getObjectId("_id");
+        String branchName = document.get("branch", Document.class).getString("name");
+
+        ObjectId commitId = document.get("commit", Document.class).getObjectId("_id");
+
+        ObjectId fileActionId = document.get("file_action", Document.class).getObjectId("_id");
+
+        ObjectId fileId = document.get("file", Document.class).getObjectId("_id");
+        String filePath = document.get("file", Document.class).getString("path");
 
         for (String lineGroup : addedLinesGroups) {
           List<CommentDTO> comments = commentService.extractComments(lineGroup);
@@ -147,7 +188,20 @@ public class ProjectService {
           if (!comments.isEmpty()) {
             comments =
                 commentService.mapToCommentDTO(
-                    projectName, comments, committerDate, originalHunkId);
+                    projectName,
+                    comments,
+                    committerDate,
+                    originalHunkId,
+                    hunkNewStart,
+                    hunkOldStart,
+                    vcsId,
+                    vcsUrl,
+                    branchId,
+                    branchName,
+                    commitId,
+                    fileActionId,
+                    fileId,
+                    filePath);
             commentDTOS.addAll(comments);
           }
         }

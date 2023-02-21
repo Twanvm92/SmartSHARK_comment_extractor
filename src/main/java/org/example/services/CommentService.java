@@ -35,13 +35,33 @@ public class CommentService {
       String projectName,
       List<CommentDTO> comments,
       LocalDateTime committerDate,
-      ObjectId originalHunkId) {
+      ObjectId originalHunkId,
+      int hunkNewStart,
+      int hunkOldStart,
+      ObjectId vcsId,
+      String vcsUrl,
+      ObjectId branchId,
+      String branchName,
+      ObjectId commitId,
+      ObjectId fileActionId,
+      ObjectId fileId,
+      String filePath) {
     return comments.stream()
         .peek(
             (commentDTO) -> {
               commentDTO.setProjectName(projectName);
               commentDTO.setCommitterDate(committerDate);
               commentDTO.setHunkId(originalHunkId);
+              commentDTO.setHunkNewStart(hunkNewStart);
+              commentDTO.setHunkOldStart(hunkOldStart);
+              commentDTO.setVcsId(vcsId);
+              commentDTO.setVcsUrl(vcsUrl);
+              commentDTO.setBranchId(branchId);
+              commentDTO.setBranchName(branchName);
+              commentDTO.setCommitId(commitId);
+              commentDTO.setFileActionId(fileActionId);
+              commentDTO.setFileId(fileId);
+              commentDTO.setFilePath(filePath);
             })
         .collect(Collectors.toList());
   }
