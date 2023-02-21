@@ -7,13 +7,12 @@ import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Accumulators;
-import com.mongodb.client.model.Aggregates;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.bson.conversions.Bson;
 import org.example.models.CommentDTO;
 
 public class CommentDao extends AbstractDao {
@@ -47,19 +46,22 @@ public class CommentDao extends AbstractDao {
   }
 
   public void getAndAddDeduplicatedComments() {
-    commentsCollectionsWithoutPojo
-        .aggregate(
-            List.of(
-                Aggregates.match(new Document("filtered", false)),
-                Aggregates.group(
-                    new Document(
-                        Map.ofEntries(
-                            Map.entry("project_name", "$project_name"),
-                            Map.entry("content", "$content"))),
-                    Accumulators.sum("count", 1),
-                    Accumulators.push("comment_ids", "$_id")),
-                Aggregates.out(DEDUPLICATED_COMMENTS_COLLECTION)))
-        .allowDiskUse(true)
-        .toCollection();
+
+    List<? extends Bson> pipeline =
+        Arrays.asList(
+            new Document().append("$match", new Document().append("filtered", false)),
+            new Document()
+                .append(
+                    "$group",
+                    new Document()
+                        .append(
+                            "_id",
+                            new Document()
+                                .append("project_name", "$project_name")
+                                .append("content", "$content"))
+                        .append("count", new Document().append("$sum", 1.0))
+                        .append("comments", new Document().append("$push", "$$ROOT"))),
+            new Document().append("$out", DEDUPLICATED_COMMENTS_COLLECTION));
+    commentsCollectionsWithoutPojo.aggregate(pipeline).allowDiskUse(true).toCollection();
   }
 }
