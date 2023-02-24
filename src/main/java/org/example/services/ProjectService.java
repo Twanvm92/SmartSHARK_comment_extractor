@@ -230,9 +230,8 @@ public class ProjectService {
     commentService.getAndAddDeduplicatedComments();
   }
 
-  private List<String> extractAddedLinesFromContent(String content) {
-    //    private final String ADDED_LINES_REGEX = "^\\+(?>.+(?>\\n\\+)*)+";
-    String ADDED_LINES_REGEX = "^(?:\\+.+\\n?)+$";
+  public List<String> extractAddedLinesFromContent(String content) {
+    String ADDED_LINES_REGEX = "^(?:\\+.+\\r?\\n?)+$";
     return Pattern.compile(ADDED_LINES_REGEX, Pattern.MULTILINE)
         .matcher(content)
         .results()
