@@ -147,7 +147,7 @@ public class CommentService {
     int lineCountStart = 1;
     int i = 0;
     CommentDTO commentDTO;
-    int currLineNumb = 0;
+    int currLineNumb;
     for (LineComment lineComment : lineComments) {
 
       String lineContent = lineComment.getContent().strip();
