@@ -51,6 +51,6 @@ public class Main {
     //        TODO need pass limit as one command line argument
     //        TODO also need to pass getInitialHunks for first hunk retrieval and saving
     //        TODO commandline argument outputOriginalHunks and objectId both optional
-    projectService.addCommentsByProject(100_000, true);
+    projectService.addCommentsByProject(100_000, false);
   }
 }
