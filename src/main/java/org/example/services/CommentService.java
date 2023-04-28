@@ -20,17 +20,44 @@ import org.example.daos.CommentDao;
 import org.example.models.CommentDTO;
 import org.example.models.CommentType;
 
+/** A service for managing comments in source code files. */
 public class CommentService {
 
   private final CommentDao commentDao;
   private final JavaParser parser;
 
+  /**
+   * Constructs a new CommentService object.
+   *
+   * @param commentDao the data access object used to store and retrieve comments
+   */
   public CommentService(CommentDao commentDao) {
     this.commentDao = commentDao;
     parser = new JavaParser();
     parser.getParserConfiguration().setPreprocessUnicodeEscapes(true);
   }
 
+  /**
+   * Maps a list of CommentDTO objects to a new list of CommentDTO objects, setting additional
+   * properties for each CommentDTO.
+   *
+   * @param projectName the name of the project
+   * @param comments the list of CommentDTO objects to map
+   * @param committerDate the date the comment was committed
+   * @param originalHunkId the ID of the original hunk
+   * @param hunkNewStart the starting line number of the new hunk
+   * @param hunkOldStart the starting line number of the old hunk
+   * @param vcsId the ID of the version control system
+   * @param vcsUrl the URL of the version control system
+   * @param branchId the ID of the branch
+   * @param branchName the name of the branch
+   * @param commitId the ID of the commit
+   * @param commitHash the hash of the commit
+   * @param fileActionId the ID of the file action
+   * @param fileId the ID of the file
+   * @param filePath the path of the file
+   * @return a new list of CommentDTO objects
+   */
   public List<CommentDTO> mapToCommentDTO(
       String projectName,
       List<CommentDTO> comments,
@@ -68,10 +95,21 @@ public class CommentService {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Adds a list of CommentDTO objects to the data store.
+   *
+   * @param commentDTOs the list of CommentDTO objects to add
+   */
   public void addComments(List<CommentDTO> commentDTOs) {
     commentDao.addComments(commentDTOs);
   }
 
+  /**
+   * Extracts comments from the given Java code and returns a list of CommentDTO objects.
+   *
+   * @param str the Java code from which to extract comments
+   * @return a list of CommentDTO objects representing the extracted comments
+   */
   public List<CommentDTO> extractComments(String str) {
     ParseResult<CompilationUnit> pr = parser.parse(str);
 
@@ -100,6 +138,12 @@ public class CommentService {
     return commentList;
   }
 
+  /**
+   * Filters a set of Javadoc comments and returns a list of CommentDTO objects.
+   *
+   * @param javadocComments the set of Javadoc comments to filter
+   * @return a list of CommentDTO objects representing the filtered comments
+   */
   private List<CommentDTO> filterJavaDocComments(Set<JavadocComment> javadocComments) {
 
     List<CommentDTO> commentDTOs = new ArrayList<>();
@@ -119,6 +163,12 @@ public class CommentService {
     return commentDTOs;
   }
 
+  /**
+   * Filters a set of BlockComment and creates CommentDTO objects for the non-filtered comments.
+   *
+   * @param blockComments a set of BlockComment to filter
+   * @return a List of CommentDTO objects representing the non-filtered BlockComment objects
+   */
   private List<CommentDTO> filterBlockComments(Set<BlockComment> blockComments) {
     List<CommentDTO> commentDTOs = new ArrayList<>();
 
@@ -137,6 +187,12 @@ public class CommentService {
     return commentDTOs;
   }
 
+  /**
+   * Filters the line comments and creates a list of CommentDTO objects.
+   *
+   * @param lineComments a set of LineComment objects to be filtered
+   * @return a list of CommentDTO objects containing the non-filtered line comments
+   */
   private List<CommentDTO> filterLineComments(Set<LineComment> lineComments) {
 
     List<CommentDTO> commentDTOs = new ArrayList<>();
@@ -186,16 +242,36 @@ public class CommentService {
     return commentDTOs;
   }
 
+  /**
+   * Checks if the given comment contains any of the SATD tags ("FIXME", "XXX", or "TODO").
+   *
+   * @param comment the comment string to check
+   * @return true if the comment contains any of the SATD tags, false otherwise
+   */
   private boolean containsSatdTags(String comment) {
     String lowerCase = comment.toLowerCase();
     return lowerCase.contains("fixme") || lowerCase.contains("xxx") || lowerCase.contains("todo");
   }
 
+  /**
+   * Checks if the given comment string contains the word "license" or "copyright" in any case.
+   *
+   * @param comment the comment string to check for a license.
+   * @return true if the comment contains a license, false otherwise.
+   */
   private boolean containsLicense(String comment) {
     String lowerCase = comment.toLowerCase();
     return lowerCase.contains("license") || lowerCase.contains("copyright");
   }
 
+  /**
+   * Checks if the given comment contains any source code by matching against a regular expression
+   * pattern that looks for common Java syntax for control structures, primitive data types, and
+   * common Java class methods.
+   *
+   * @param comment the comment to check for source code
+   * @return true if the comment contains source code, false otherwise
+   */
   private boolean containsSourceCode(String comment) {
     String SOURCE_CODE_REGEX =
         "else\\s*\\{|"
@@ -225,14 +301,32 @@ public class CommentService {
     return Pattern.compile(SOURCE_CODE_REGEX).matcher(comment).find();
   }
 
+  /**
+   * Returns true if the provided comment string is blank, false otherwise.
+   *
+   * @param comment the comment string to check for blankness
+   * @return true if the provided comment string is blank, false otherwise
+   */
   private boolean isBlankString(String comment) {
     return comment.replace("\t", "").isBlank();
   }
 
+  /**
+   * Checks if the given comment is an IDE auto-generated comment.
+   *
+   * @param comment the comment to check
+   * @return true if the comment is an auto-generated comment, false otherwise
+   */
   private boolean isAutoGeneratedComment(String comment) {
     return comment.toLowerCase().contains("todo auto-generated");
   }
 
+  /**
+   * Creates a CommenDTO from the given StringBuilder containing grouped line comments.
+   *
+   * @param strBuilder the StringBuilder containing grouped line comments.
+   * @return a CommentDTO object representing the grouped line comments.
+   */
   private CommentDTO createCommentDTOFromConds(StringBuilder strBuilder) {
     String groupedLineStr = strBuilder.toString();
     CommentDTO commentDTO = new CommentDTO(groupedLineStr, true, CommentType.GROUPED_LINE);

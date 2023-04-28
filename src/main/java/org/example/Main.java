@@ -14,7 +14,14 @@ import org.example.services.ProjectService;
 
 public class Main {
   public static void main(String[] args) throws ConfigurationException {
-
+    /**
+     * The main method for the project. Initializes the necessary components for the program to run
+     * and calls the projectService extract and persist comments per project. Uses an
+     * applications.properties file as configuration file to instantiate mongodb connections.
+     *
+     * @param args The command line arguments passed to the program. Currently not used.
+     * @throws ConfigurationException If an error occurs while reading the configuration file.
+     */
     PropertiesConfiguration config = new PropertiesConfiguration("application.properties");
 
     MongoDBConfiguration mongoConfig = new MongoDBConfiguration(config);
@@ -47,10 +54,16 @@ public class Main {
     ProjectService projectService =
         new ProjectService(projectDao, hunkService, configDAO, commentService);
 
+    //    TODO need to configure this in command line if users want to start processing
+    //    hunks from a certain hunk ordered by the creation time of the hunk in the intermediate
+    //    database.
     ObjectId lastSeenId = new ObjectId("63095e9d2c57ac341b55dc61");
+    //    TODO setup command line interface with an argparser for usability.
     //        TODO need pass limit as one command line argument
     //        TODO also need to pass getInitialHunks for first hunk retrieval and saving
     //        TODO commandline argument outputOriginalHunks and objectId both optional
+
+    //    for first time and general usage: set outputOriginalHunks to true
     projectService.addCommentsByProject(100_000, false);
   }
 }

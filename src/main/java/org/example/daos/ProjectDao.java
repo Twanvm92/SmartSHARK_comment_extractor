@@ -10,16 +10,37 @@ import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+/**
+ * This class provides a DAO (Data Access Object) implementation for the project collection in the
+ * MongoDB database.
+ */
 public class ProjectDao extends AbstractDao {
 
   public static final String PROJECTS_COLLECTION = "project";
   private final MongoCollection<Document> projectsCollection;
 
+  /**
+   * Constructs a new instance of the ProjectDao class with the specified MongoDB database names and
+   * client.
+   *
+   * @param SMARTSHARK_DATABASE The name of the MongoDB database for SmartSHARK.
+   * @param COMMENT_DATABASE The name of the MongoDB database for comments.
+   * @param mongoClient The client to connect to the MongoDB database.
+   */
   public ProjectDao(String SMARTSHARK_DATABASE, String COMMENT_DATABASE, MongoClient mongoClient) {
     super(SMARTSHARK_DATABASE, COMMENT_DATABASE, mongoClient);
     projectsCollection = db.getCollection(PROJECTS_COLLECTION);
   }
 
+  //  TODO integrate the date filter into the CLI with argparser.
+  /**
+   * This method retrieves all projects with their respective hunks from the database using an
+   * aggregation pipeline with multiple stages of $lookup, $unwind, and $match. The resulting
+   * documents are filtered by those with at least one hunk containing more than 0 lines added, and
+   * the committer_date of the commit associated with the hunk is greater than or equal to January
+   * 1, 2020 at 1:00 AM CET. The hunks are collected from each project's branch that is considered
+   * the 'main' branch.
+   */
   public void outputProjectsWithHunks() {
 
     List<? extends Bson> pipeline;

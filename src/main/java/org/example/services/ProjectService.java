@@ -34,6 +34,17 @@ public class ProjectService {
     this.commentService = commentService;
   }
 
+  /**
+   * Retrieves and processes hunks of code, extracting comments and storing them in the database.
+   *
+   * <p>If outputOriginalHunks is true, it also outputs the initial hunks.
+   *
+   * @param limit the maximum number of hunks to process at once
+   * @param outputOriginalHunks whether or not to extract the initial hunks from the SmartSHARK
+   *     database and persist them in the intermediate database for further processing. If set to
+   *     False, will assume initial (time-consuming) collection of hunks from SmartSHARK database
+   *     has already happened. Continue to retrieve comments from the extracted hunks.
+   */
   public void addCommentsByProject(int limit, boolean outputOriginalHunks) {
     float secondInHour = 3600;
     if (outputOriginalHunks) {
@@ -138,6 +149,7 @@ public class ProjectService {
     commentService.getAndAddDeduplicatedComments();
   }
 
+  //  TODO can be used to start extracting comments from a specific hunk_id
   public void addCommentsByProject(ObjectId lastSeenId, int limit) {
 
     float secondInHour = 3600;
@@ -230,6 +242,13 @@ public class ProjectService {
     commentService.getAndAddDeduplicatedComments();
   }
 
+  /**
+   * Extracts added lines from the provided content string. Added lines are lines that start with a
+   * "+" symbol.
+   *
+   * @param content the content to extract added lines from
+   * @return a list of strings containing the added lines from the content
+   */
   public List<String> extractAddedLinesFromContent(String content) {
     String ADDED_LINES_REGEX = "^(?:\\+.+\\r?\\n?)+$";
     return Pattern.compile(ADDED_LINES_REGEX, Pattern.MULTILINE)
