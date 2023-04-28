@@ -163,4 +163,7 @@ replay_pid*
 **/gen
 **/JavaLanguageLexer.tokens
 
+# data files
+data_quality_check/data
+
 # End of https://www.toptal.com/developers/gitignore/api/intellij
