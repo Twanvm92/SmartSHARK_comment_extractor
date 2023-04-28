@@ -39,7 +39,8 @@ mongodb.port=<pick_27017_if_running_locally>
 mongodb.options=?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false
 ```
 
-You should change every <value> to your own database settings. Additionally, the SmartSHARK and the
+You should change every \<value>\ to your own database settings. Additionally, the SmartSHARK and
+the
 intermediate database should be running on the same server.
 
 ## CLI
