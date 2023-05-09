@@ -57,9 +57,6 @@ committer_date having to be set in the aggregation query in the ProjectDAO class
 
 ## Known Issues
 
-- currently, comments are extracted from all files that occur in a commit diff, not just Java
-  source-code files
-
 ## References
 
 Everton da Silva Maldonado, Emad Shihab, and Nikolaos Tsantalis. Using natural language processing
