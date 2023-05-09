@@ -1,6 +1,7 @@
 package org.example;
 
 import com.mongodb.client.MongoClient;
+import java.text.ParseException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.bson.types.ObjectId;
@@ -13,7 +14,7 @@ import org.example.services.HunkService;
 import org.example.services.ProjectService;
 
 public class Main {
-  public static void main(String[] args) throws ConfigurationException {
+  public static void main(String[] args) throws ConfigurationException, ParseException {
     /**
      * The main method for the project. Initializes the necessary components for the program to run
      * and calls the projectService extract and persist comments per project. Uses an
@@ -64,6 +65,6 @@ public class Main {
     //        TODO commandline argument outputOriginalHunks and objectId both optional
 
     //    for first time and general usage: set outputOriginalHunks to true
-    projectService.addCommentsByProject(100_000, false);
+    projectService.addCommentsByProject(100_000, true);
   }
 }

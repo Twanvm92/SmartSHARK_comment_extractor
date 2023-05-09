@@ -337,8 +337,4 @@ public class CommentService {
     }
     return commentDTO;
   }
-
-  public void getAndAddDeduplicatedComments() {
-    commentDao.getAndAddDeduplicatedComments();
-  }
 }

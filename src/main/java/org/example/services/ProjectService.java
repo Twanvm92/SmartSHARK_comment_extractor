@@ -1,5 +1,6 @@
 package org.example.services;
 
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -45,7 +46,7 @@ public class ProjectService {
    *     False, will assume initial (time-consuming) collection of hunks from SmartSHARK database
    *     has already happened. Continue to retrieve comments from the extracted hunks.
    */
-  public void addCommentsByProject(int limit, boolean outputOriginalHunks) {
+  public void addCommentsByProject(int limit, boolean outputOriginalHunks) throws ParseException {
     float secondInHour = 3600;
     if (outputOriginalHunks) {
 
@@ -145,8 +146,6 @@ public class ProjectService {
 
       hunks = hunkService.getHunks(lastSeenObjectId, limit);
     }
-
-    commentService.getAndAddDeduplicatedComments();
   }
 
   //  TODO can be used to start extracting comments from a specific hunk_id
@@ -238,8 +237,6 @@ public class ProjectService {
 
       hunks = hunkService.getHunks(lastSeenId, limit);
     }
-
-    commentService.getAndAddDeduplicatedComments();
   }
 
   /**
