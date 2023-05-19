@@ -65,6 +65,6 @@ public class Main {
     //        TODO commandline argument outputOriginalHunks and objectId both optional
 
     //    for first time and general usage: set outputOriginalHunks to true
-    projectService.addCommentsByProject(100_000, true);
+    projectService.addCommentsByProject(100_000, false);
   }
 }

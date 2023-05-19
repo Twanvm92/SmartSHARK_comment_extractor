@@ -23,7 +23,7 @@ import org.example.models.CommentDTO;
  */
 public class CommentDao extends AbstractDao {
 
-  public static final String COMMENTS_COLLECTION = "comments";
+  public static final String COMMENTS_COLLECTION = "comments_only_java";
   public static final String DEDUPLICATED_COMMENTS_COLLECTION = "deduplicated_nonfiltered_comments";
   private final MongoCollection<CommentDTO> commentsCollection;
   private final MongoCollection<Document> commentsCollectionsWithoutPojo;
